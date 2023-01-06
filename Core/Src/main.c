@@ -43,7 +43,7 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-#define mpu9265Address 0xD0
+#define mpu9265Address 0x68<<1
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -54,6 +54,11 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+void getAcceleration(int16_t* x, int16_t* y, int16_t* z);
+void getAccelerationMEM(int16_t* x, int16_t* y, int16_t* z);
+void getRotationMEM(int16_t* x, int16_t* y, int16_t* z);
+void getCompasMEM(int16_t* x, int16_t* y, int16_t* z);
+
 uint8_t i2cBuf[8];
 int16_t	ax,ay,az;
 float Xaccel, Yaccel, Zaccel;
@@ -93,24 +98,14 @@ int main(void)
   LCD1602_noBlink();
   LCD1602_noCursor();
 
-  for(uint8_t i=0; i<255; i++)
-  {
-	  if(HAL_I2C_IsDeviceReady(&hi2c1, i, 1, 10) == HAL_OK)
-	  {
-		  break;
-	  }
-  }
-  //i2cBuf[0] = 0x3B;
-  //i2cBuf[0] = 0x1C;
-  i2cBuf[0] = 0x1B;
-  i2cBuf[1] = 0x00;
-  HAL_I2C_Master_Transmit(&hi2c1, mpu9265Address, i2cBuf, 2, 10);
 
-  i2cBuf[0] = 0x1B;
-  HAL_I2C_Master_Transmit(&hi2c1, mpu9265Address, i2cBuf, 1, 10);
-  i2cBuf[1] = 0x00;
+  i2cBuf[0] = 0x18;
+  //init accelerometer for +-16g
+  HAL_I2C_Mem_Write(&hi2c1, 0x68<<1, 0x1C, 1, i2cBuf, 1, 10);
 
-  HAL_I2C_Master_Receive(&hi2c1, mpu9265Address, &i2cBuf[1], 1, 10);
+  i2cBuf[0] = 0x18;
+  //init accelerometer for +-2000 dps
+  HAL_I2C_Mem_Write(&hi2c1, 0x68<<1, 0x1B, 1, i2cBuf, 1, 10);
 
   LCD1602_print("x:");
   LCD1602_setCursor(1, 10);
@@ -126,36 +121,22 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  //i2cBuf[0] = 0x3B;	//accel
-	  //i2cBuf[0] = 0x03;	//mag
-	  i2cBuf[0] = 0x43;		//gyro
+	  //HAL_I2C_Mem_Read(&hi2c1, mpu9265Address, 0x3B, 2, &i2cBuf[1], 2, 100);
 
-	  //char a = i2cBuf[0];
-	  HAL_I2C_Master_Transmit(&hi2c1, mpu9265Address, i2cBuf, 1, 10);
+	  /*getAccelerationMEM(&ax, &ay, &az);
+	  Xaccel = ax/2048.0;
+	  Yaccel = ay/2048.0;
+	  Zaccel = az/2048.0;*/
 
-	  i2cBuf[1] = 0x00;
+	  /*getRotationMEM(&ax, &ay, &az);
+	  Xaccel = ax/16.384;
+	  Yaccel = ay/16.384;
+	  Zaccel = az/16.384;*/
 
-	  HAL_I2C_Master_Receive(&hi2c1, mpu9265Address, &i2cBuf[1], 6, 10);
-
-	  ax = i2cBuf[1]<<8 | i2cBuf[2];
-	  ay = i2cBuf[3]<<8 | i2cBuf[4];
-	  az = i2cBuf[5]<<8 | i2cBuf[6];
-
-	  /*ax = i2cBuf[2]<<8 | i2cBuf[1];
-	  ay = i2cBuf[4]<<8 | i2cBuf[3];
-	  az = i2cBuf[6]<<8 | i2cBuf[5];*/
-
-	  Xaccel = ax/131.0;
-	  Yaccel = ay/131.0;
-	  Zaccel = az/131.0;
-
-	  int16_t a = ax;
-
-	  //Xaccel = ax;
-	  //Yaccel = ay;
-	  //Zaccel = az;
-
-	  LCD1602_clear();
+	  getCompasMEM(&ax, &ay, &az);
+	  Xaccel = ax/1.7066666666666666666666666666667;
+	  Yaccel = ay/1.7066666666666666666666666666667;
+	  Zaccel = az/1.7066666666666666666666666666667;
 
 	  LCD1602_setCursor(1, 3);
 	  if(Xaccel > 0) LCD1602_print(" ");
@@ -171,7 +152,7 @@ int main(void)
 	  if(Yaccel > 0) LCD1602_print(" ");
 	  LCD1602_PrintFloat(Yaccel, 2);
 
-	  HAL_Delay((int)(1000/4));
+	  HAL_Delay((int)(1000/10));
 
 	  /*LCD1602_clear();
 	  LCD1602_print("Hello World");
@@ -238,6 +219,60 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+void getAcceleration(int16_t* x, int16_t* y, int16_t* z)
+{
+	i2cBuf[0] = 0x3B;
+	HAL_I2C_Master_Transmit(&hi2c1, mpu9265Address, i2cBuf, 1, 10);
+
+	HAL_I2C_Master_Receive(&hi2c1, mpu9265Address, &i2cBuf[1], 6, 10);
+
+	*x = i2cBuf[1]<<8 | i2cBuf[2];
+	*y = i2cBuf[3]<<8 | i2cBuf[4];
+	*z = i2cBuf[5]<<8 | i2cBuf[6];
+
+	return;
+}
+
+void getAccelerationMEM(int16_t* x, int16_t* y, int16_t* z)
+{
+	HAL_I2C_Mem_Read(&hi2c1, mpu9265Address, 0x3B, 1, &i2cBuf[1], 6, 100);
+
+	*x = (int16_t)(i2cBuf[1]<<8 | i2cBuf[2]);
+	*y = (int16_t)(i2cBuf[3]<<8 | i2cBuf[4]);
+	*z = (int16_t)(i2cBuf[5]<<8 | i2cBuf[6]);
+
+	return;
+}
+
+void getRotationMEM(int16_t* x, int16_t* y, int16_t* z)
+{
+	HAL_I2C_Mem_Read(&hi2c1, mpu9265Address, 0x3B, 1, &i2cBuf[1], 6, 100);
+
+	*x = (int16_t)(i2cBuf[1]<<8 | i2cBuf[2]);
+	*y = (int16_t)(i2cBuf[3]<<8 | i2cBuf[4]);
+	*z = (int16_t)(i2cBuf[5]<<8 | i2cBuf[6]);
+
+	return;
+}
+
+void getCompasMEM(int16_t* x, int16_t* y, int16_t* z)
+{
+	i2cBuf[0] = 0x02;
+	HAL_I2C_Mem_Write(&hi2c1, mpu9265Address, 0x37, 1, i2cBuf, 1, 100);
+
+	i2cBuf[0] = 0x01;
+	HAL_I2C_Mem_Write(&hi2c1, 0x0C<<1, 0x0A, 1, i2cBuf, 1, 100);
+	HAL_Delay(100);
+
+	HAL_I2C_Mem_Read(&hi2c1, 0x0C<<1, 0x03, 1, &i2cBuf[1], 6, 100);
+
+	*x = ((int16_t)i2cBuf[2]<<8) | i2cBuf[1];
+	*y = ((int16_t)i2cBuf[4]<<8) | i2cBuf[3];
+	*z = ((int16_t)i2cBuf[6]<<8) | i2cBuf[5];
+
+	return;
+}
 
 /* USER CODE END 4 */
 

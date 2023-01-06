@@ -1,3 +1,7 @@
-../Core/Src/main.c:66:5:main	56	static
-../Core/Src/main.c:198:6:SystemClock_Config	88	static
-../Core/Src/main.c:248:6:Error_Handler	4	static,ignoring_inline_asm
+../Core/Src/main.c:71:5:main	48	static
+../Core/Src/main.c:179:6:SystemClock_Config	88	static
+../Core/Src/main.c:223:6:getAcceleration	32	static
+../Core/Src/main.c:237:6:getAccelerationMEM	40	static
+../Core/Src/main.c:248:6:getRotationMEM	40	static
+../Core/Src/main.c:259:6:getCompasMEM	40	static
+../Core/Src/main.c:283:6:Error_Handler	4	static,ignoring_inline_asm
