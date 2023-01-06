@@ -259,13 +259,14 @@ void getRotationMEM(int16_t* x, int16_t* y, int16_t* z)
 void getCompasMEM(int16_t* x, int16_t* y, int16_t* z)
 {
 	i2cBuf[0] = 0x02;
-	HAL_I2C_Mem_Write(&hi2c1, mpu9265Address, 0x37, 1, i2cBuf, 1, 100);
+	HAL_I2C_Mem_Write(&hi2c1, mpu9265Address, 0x37, 1, i2cBuf, 1, 100);	//przepuść mnie do kompasa
 
 	i2cBuf[0] = 0x01;
-	HAL_I2C_Mem_Write(&hi2c1, 0x0C<<1, 0x0A, 1, i2cBuf, 1, 100);
-	HAL_Delay(100);
+	HAL_I2C_Mem_Write(&hi2c1, 0x0C<<1, 0x0A, 1, i2cBuf, 1, 100);		//zrób pomiar kompasem okok
 
-	HAL_I2C_Mem_Read(&hi2c1, 0x0C<<1, 0x03, 1, &i2cBuf[1], 6, 100);
+	HAL_Delay(100);		// delay bo kompas musi się zmierzyć, zamiast delaya można poczekać aż rejestr ST_1, da się ustawić na continuous mode w CNTL1
+
+	HAL_I2C_Mem_Read(&hi2c1, 0x0C<<1, 0x03, 1, &i2cBuf[1], 6, 100);		//odczytaj kompas
 
 	*x = ((int16_t)i2cBuf[2]<<8) | i2cBuf[1];
 	*y = ((int16_t)i2cBuf[4]<<8) | i2cBuf[3];
